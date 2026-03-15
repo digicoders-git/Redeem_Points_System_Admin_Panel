@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../api/axios";
 import { ShieldCheck } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function AdminLogin() {
   const [form, setForm] = useState({ adminId: "", password: "" });
@@ -15,9 +16,12 @@ export default function AdminLogin() {
       const { data } = await api.post("/admin/login", form);
       localStorage.setItem("adminToken", data.token);
       localStorage.setItem("adminInfo", JSON.stringify(data.admin));
+      await Swal.fire({ icon: "success", title: "Login Successful", text: "Welcome back!", timer: 1500, showConfirmButton: false });
       window.location.reload();
     } catch (e) {
-      setErr(e.response?.data?.message || "Login failed");
+      const msg = e.response?.data?.message || "Login failed";
+      setErr(msg);
+      Swal.fire({ icon: "error", title: "Login Failed", text: msg });
     } finally {
       setLoading(false);
     }

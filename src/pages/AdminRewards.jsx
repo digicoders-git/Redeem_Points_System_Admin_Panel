@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { Target } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function AdminRewards() {
   const [rewards, setRewards] = useState([]);
   // API fields: rewardName, rewardImage, pointsRequired, description
   const [form, setForm] = useState({ rewardName: "", rewardImage: "", pointsRequired: "", description: "" });
   const [editing, setEditing] = useState(null);
-  const [msg, setMsg] = useState("");
 
   const load = () =>
     api.get("/rewards/admin/rewards").then(({ data }) => setRewards(data.rewards || []));
@@ -25,11 +25,10 @@ export default function AdminRewards() {
       }
       setForm({ rewardName: "", rewardImage: "", pointsRequired: "", description: "" });
       setEditing(null);
-      setMsg(editing ? "Reward updated!" : "Reward added!");
-      setTimeout(() => setMsg(""), 2000);
+      Swal.fire({ icon: "success", title: editing ? "Reward Updated!" : "Reward Added!", timer: 1500, showConfirmButton: false });
       load();
     } catch (e) {
-      setMsg(e.response?.data?.message || "Failed");
+      Swal.fire({ icon: "error", title: "Failed", text: e.response?.data?.message || "Something went wrong" });
     }
   };
 
@@ -44,8 +43,10 @@ export default function AdminRewards() {
   };
 
   const remove = async (id) => {
-    if (!confirm("Delete this reward?")) return;
+    const res = await Swal.fire({ title: "Delete Reward?", text: "This cannot be undone!", icon: "warning", showCancelButton: true, confirmButtonText: "Yes, Delete", confirmButtonColor: "#ef4444" });
+    if (!res.isConfirmed) return;
     await api.delete(`/rewards/admin/rewards/${id}`);
+    Swal.fire({ icon: "success", title: "Deleted!", timer: 1200, showConfirmButton: false });
     load();
   };
 
@@ -60,9 +61,6 @@ export default function AdminRewards() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5">
         <h3 className="font-semibold text-gray-700 mb-3">{editing ? "Edit Reward" : "Add New Reward"}</h3>
-        {msg && (
-          <div className="bg-green-50 text-green-600 text-sm rounded-xl px-4 py-2 mb-3 text-center">{msg}</div>
-        )}
         <form onSubmit={submit} className="space-y-3">
           <input
             placeholder="Reward Name"
@@ -92,14 +90,14 @@ export default function AdminRewards() {
             className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
           />
           <div className="flex gap-2">
-            <button type="submit" className="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-sm font-semibold">
+            <button type="submit" className="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-sm font-semibold transition active:scale-95 active:opacity-80">
               {editing ? "Update" : "Add Reward"}
             </button>
             {editing && (
               <button
                 type="button"
                 onClick={() => { setEditing(null); setForm({ rewardName: "", rewardImage: "", pointsRequired: "", description: "" }); }}
-                className="flex-1 border border-gray-300 text-gray-600 py-2.5 rounded-xl text-sm font-semibold"
+                className="flex-1 border border-gray-300 text-gray-600 py-2.5 rounded-xl text-sm font-semibold transition active:scale-95 active:opacity-80"
               >
                 Cancel
               </button>
@@ -128,13 +126,13 @@ export default function AdminRewards() {
                   {r.isActive ? "Active" : "Inactive"}
                 </span>
                 <div className="flex gap-1.5">
-                  <button onClick={() => toggleActive(r)} className="text-xs bg-amber-50 text-amber-600 px-2 py-1 rounded-lg font-medium">
+                  <button onClick={() => toggleActive(r)} className="text-xs bg-amber-50 text-amber-600 px-2 py-1 rounded-lg font-medium transition active:scale-90 active:bg-amber-200">
                     {r.isActive ? "Off" : "On"}
                   </button>
-                  <button onClick={() => startEdit(r)} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-lg font-medium">
+                  <button onClick={() => startEdit(r)} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-lg font-medium transition active:scale-90 active:bg-blue-200">
                     Edit
                   </button>
-                  <button onClick={() => remove(r._id)} className="text-xs bg-red-50 text-red-500 px-2 py-1 rounded-lg font-medium">
+                  <button onClick={() => remove(r._id)} className="text-xs bg-red-50 text-red-500 px-2 py-1 rounded-lg font-medium transition active:scale-90 active:bg-red-200">
                     Del
                   </button>
                 </div>

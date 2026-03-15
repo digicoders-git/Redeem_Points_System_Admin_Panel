@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { Users, Receipt, Clock, Gift, Settings, ShieldCheck } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ users: 0, bills: 0, pendingBills: 0, pendingRedemptions: 0 });
   const [admins, setAdmins] = useState([]);
   const [config, setConfig] = useState({ amountPerPoint: "" });
-  const [msg, setMsg] = useState("");
   const admin = JSON.parse(localStorage.getItem("adminInfo") || "{}");
 
   useEffect(() => {
@@ -32,10 +32,9 @@ export default function Dashboard() {
     e.preventDefault();
     try {
       await api.post("/bills/admin/point-config", { amountPerPoint: Number(config.amountPerPoint) });
-      setMsg("Config saved!");
-      setTimeout(() => setMsg(""), 2000);
+      Swal.fire({ icon: "success", title: "Config Saved!", timer: 1500, showConfirmButton: false });
     } catch {
-      setMsg("Failed to save");
+      Swal.fire({ icon: "error", title: "Failed", text: "Could not save config" });
     }
   };
 
@@ -68,9 +67,6 @@ export default function Dashboard() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
         <h3 className="font-semibold text-gray-700 mb-1 flex items-center gap-1.5"><Settings size={18} /> Point Configuration</h3>
         <p className="text-xs text-gray-400 mb-3">Set how many ₹ = 1 Point</p>
-        {msg && (
-          <div className="bg-green-50 text-green-600 text-sm rounded-xl px-4 py-2 mb-3 text-center">{msg}</div>
-        )}
         <form onSubmit={saveConfig} className="flex gap-3">
           <input
             type="number"

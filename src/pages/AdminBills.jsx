@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { Info, CheckCircle, XCircle } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function AdminBills() {
   const [bills, setBills] = useState([]);
@@ -15,15 +16,19 @@ export default function AdminBills() {
   useEffect(() => { load(); }, [filter]);
 
   const approve = async (id) => {
+    const res = await Swal.fire({ title: "Approve Bill?", icon: "question", showCancelButton: true, confirmButtonText: "Yes, Approve", confirmButtonColor: "#22c55e" });
+    if (!res.isConfirmed) return;
     await api.patch(`/bills/admin/${id}/approve`);
+    Swal.fire({ icon: "success", title: "Approved!", timer: 1200, showConfirmButton: false });
     load();
   };
 
   // API field is "rejectionReason"
   const reject = async (id) => {
-    await api.patch(`/bills/admin/${id}/reject`, {
-      rejectionReason: reason[id] || "Not specified",
-    });
+    const res = await Swal.fire({ title: "Reject Bill?", icon: "warning", showCancelButton: true, confirmButtonText: "Yes, Reject", confirmButtonColor: "#ef4444" });
+    if (!res.isConfirmed) return;
+    await api.patch(`/bills/admin/${id}/reject`, { rejectionReason: reason[id] || "Not specified" });
+    Swal.fire({ icon: "info", title: "Rejected", timer: 1200, showConfirmButton: false });
     load();
   };
 

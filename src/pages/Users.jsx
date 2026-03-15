@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { Coins } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -10,15 +11,20 @@ export default function Users() {
 
   useEffect(() => { load(); }, []);
 
-  // API expects { isActive: bool } in body
   const toggle = async (user) => {
+    const action = user.isActive ? "Deactivate" : "Activate";
+    const res = await Swal.fire({ title: `${action} User?`, icon: "question", showCancelButton: true, confirmButtonText: `Yes, ${action}`, confirmButtonColor: user.isActive ? "#ef4444" : "#22c55e" });
+    if (!res.isConfirmed) return;
     await api.patch(`/users/admin/${user._id}/status`, { isActive: !user.isActive });
+    Swal.fire({ icon: "success", title: `User ${action}d!`, timer: 1200, showConfirmButton: false });
     load();
   };
 
   const remove = async (id) => {
-    if (!confirm("Delete this user?")) return;
+    const res = await Swal.fire({ title: "Delete User?", text: "This cannot be undone!", icon: "warning", showCancelButton: true, confirmButtonText: "Yes, Delete", confirmButtonColor: "#ef4444" });
+    if (!res.isConfirmed) return;
     await api.delete(`/users/admin/${id}`);
+    Swal.fire({ icon: "success", title: "Deleted!", timer: 1200, showConfirmButton: false });
     load();
   };
 
