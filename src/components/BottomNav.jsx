@@ -1,5 +1,6 @@
 import api from "../api/axios";
 import { LayoutDashboard, Users, Receipt, Gift, CheckCircle, LogOut } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function BottomNav({ active, setActive }) {
   const tabs = [
@@ -11,8 +12,11 @@ export default function BottomNav({ active, setActive }) {
   ];
 
   const logout = async () => {
+    const res = await Swal.fire({ title: "Logout?", text: "Are you sure you want to logout?", icon: "warning", showCancelButton: true, confirmButtonText: "Yes, Logout", confirmButtonColor: "#ef4444" });
+    if (!res.isConfirmed) return;
     await api.post("/admin/logout-all").catch(() => {});
     localStorage.clear();
+    await Swal.fire({ icon: "success", title: "Logged Out!", timer: 1200, showConfirmButton: false });
     window.location.reload();
   };
 

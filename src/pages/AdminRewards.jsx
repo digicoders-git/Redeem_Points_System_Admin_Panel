@@ -1,21 +1,28 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
-import { Target } from "lucide-react";
+import { Target, Loader2 } from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function AdminRewards() {
   const [rewards, setRewards] = useState([]);
-  // API fields: rewardName, rewardImage, pointsRequired, description
   const [form, setForm] = useState({ rewardName: "", rewardImage: "", pointsRequired: "", description: "" });
   const [editing, setEditing] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [actionId, setActionId] = useState(null);
 
-  const load = () =>
-    api.get("/rewards/admin/rewards").then(({ data }) => setRewards(data.rewards || []));
+  const load = () => {
+    setLoading(true);
+    api.get("/rewards/admin/rewards")
+      .then(({ data }) => setRewards(data.rewards || []))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => { load(); }, []);
 
   const submit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       const payload = { ...form, pointsRequired: Number(form.pointsRequired) };
       if (editing) {
@@ -29,29 +36,30 @@ export default function AdminRewards() {
       load();
     } catch (e) {
       Swal.fire({ icon: "error", title: "Failed", text: e.response?.data?.message || "Something went wrong" });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const startEdit = (r) => {
     setEditing(r._id);
-    setForm({
-      rewardName: r.rewardName,
-      rewardImage: r.rewardImage || "",
-      pointsRequired: r.pointsRequired,
-      description: r.description || "",
-    });
+    setForm({ rewardName: r.rewardName, rewardImage: r.rewardImage || "", pointsRequired: r.pointsRequired, description: r.description || "" });
   };
 
   const remove = async (id) => {
     const res = await Swal.fire({ title: "Delete Reward?", text: "This cannot be undone!", icon: "warning", showCancelButton: true, confirmButtonText: "Yes, Delete", confirmButtonColor: "#ef4444" });
     if (!res.isConfirmed) return;
+    setActionId(id);
     await api.delete(`/rewards/admin/rewards/${id}`);
+    setActionId(null);
     Swal.fire({ icon: "success", title: "Deleted!", timer: 1200, showConfirmButton: false });
     load();
   };
 
   const toggleActive = async (r) => {
+    setActionId(r._id);
     await api.put(`/rewards/admin/rewards/${r._id}`, { isActive: !r.isActive });
+    setActionId(null);
     load();
   };
 
@@ -90,7 +98,12 @@ export default function AdminRewards() {
             className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
           />
           <div className="flex gap-2">
-            <button type="submit" className="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-sm font-semibold transition active:scale-95 active:opacity-80">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition active:scale-95 active:opacity-80"
+            >
+              {submitting && <Loader2 size={16} className="animate-spin" />}
               {editing ? "Update" : "Add Reward"}
             </button>
             {editing && (
@@ -106,41 +119,58 @@ export default function AdminRewards() {
         </form>
       </div>
 
-      <div className="space-y-3">
-        {rewards.length === 0 && (
-          <p className="text-center text-gray-400 text-sm py-8">No rewards added yet</p>
-        )}
-        {rewards.map((r) => (
-          <div key={r._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3">
-            <div className="flex gap-3 items-center">
-              {r.rewardImage && (
-                <img src={r.rewardImage} alt={r.rewardName} className="w-14 h-14 rounded-xl object-cover" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-800 truncate">{r.rewardName}</p>
-                {r.description && <p className="text-xs text-gray-400 truncate">{r.description}</p>}
-                <p className="text-xs text-violet-600 font-semibold mt-0.5 flex items-center gap-1"><Target size={12} /> {r.pointsRequired} pts</p>
-              </div>
-              <div className="flex flex-col gap-1.5 items-end">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${r.isActive ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"}`}>
-                  {r.isActive ? "Active" : "Inactive"}
-                </span>
-                <div className="flex gap-1.5">
-                  <button onClick={() => toggleActive(r)} className="text-xs bg-amber-50 text-amber-600 px-2 py-1 rounded-lg font-medium transition active:scale-90 active:bg-amber-200">
-                    {r.isActive ? "Off" : "On"}
-                  </button>
-                  <button onClick={() => startEdit(r)} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-lg font-medium transition active:scale-90 active:bg-blue-200">
-                    Edit
-                  </button>
-                  <button onClick={() => remove(r._id)} className="text-xs bg-red-50 text-red-500 px-2 py-1 rounded-lg font-medium transition active:scale-90 active:bg-red-200">
-                    Del
-                  </button>
+      {loading ? (
+        <div className="flex justify-center items-center py-16">
+          <Loader2 size={32} className="animate-spin text-slate-400" />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {rewards.length === 0 && (
+            <p className="text-center text-gray-400 text-sm py-8">No rewards added yet</p>
+          )}
+          {rewards.map((r) => (
+            <div key={r._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3">
+              <div className="flex gap-3 items-center">
+                {r.rewardImage && (
+                  <img src={r.rewardImage} alt={r.rewardName} className="w-14 h-14 rounded-xl object-cover" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-800 truncate">{r.rewardName}</p>
+                  {r.description && <p className="text-xs text-gray-400 truncate">{r.description}</p>}
+                  <p className="text-xs text-violet-600 font-semibold mt-0.5 flex items-center gap-1"><Target size={12} /> {r.pointsRequired} pts</p>
+                </div>
+                <div className="flex flex-col gap-1.5 items-end">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${r.isActive ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"}`}>
+                    {r.isActive ? "Active" : "Inactive"}
+                  </span>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => toggleActive(r)}
+                      disabled={actionId === r._id}
+                      className="text-xs bg-amber-50 text-amber-600 px-2 py-1 rounded-lg font-medium transition active:scale-90 active:bg-amber-200 disabled:opacity-60 flex items-center gap-1"
+                    >
+                      {actionId === r._id ? <Loader2 size={12} className="animate-spin" /> : (r.isActive ? "Off" : "On")}
+                    </button>
+                    <button
+                      onClick={() => startEdit(r)}
+                      className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-lg font-medium transition active:scale-90 active:bg-blue-200"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => remove(r._id)}
+                      disabled={actionId === r._id}
+                      className="text-xs bg-red-50 text-red-500 px-2 py-1 rounded-lg font-medium transition active:scale-90 active:bg-red-200 disabled:opacity-60 flex items-center gap-1"
+                    >
+                      {actionId === r._id ? <Loader2 size={12} className="animate-spin" /> : "Del"}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

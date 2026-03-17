@@ -1,33 +1,41 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
-import { Info, CheckCircle, XCircle } from "lucide-react";
+import { Info, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function AdminRedemptions() {
   const [redemptions, setRedemptions] = useState([]);
   const [filter, setFilter] = useState("all");
   const [reason, setReason] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [actionId, setActionId] = useState(null);
 
-  const load = () =>
+  const load = () => {
+    setLoading(true);
     api
       .get("/rewards/admin/redemptions", { params: filter !== "all" ? { status: filter } : {} })
-      .then(({ data }) => setRedemptions(data.redemptions || []));
+      .then(({ data }) => setRedemptions(data.redemptions || []))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => { load(); }, [filter]);
 
   const approve = async (id) => {
     const res = await Swal.fire({ title: "Approve Redemption?", icon: "question", showCancelButton: true, confirmButtonText: "Yes, Approve", confirmButtonColor: "#22c55e" });
     if (!res.isConfirmed) return;
+    setActionId(id);
     await api.patch(`/rewards/admin/redemptions/${id}/approve`);
+    setActionId(null);
     Swal.fire({ icon: "success", title: "Approved!", timer: 1200, showConfirmButton: false });
     load();
   };
 
-  // API field is "rejectionReason"
   const reject = async (id) => {
     const res = await Swal.fire({ title: "Reject Redemption?", icon: "warning", showCancelButton: true, confirmButtonText: "Yes, Reject", confirmButtonColor: "#ef4444" });
     if (!res.isConfirmed) return;
+    setActionId(id);
     await api.patch(`/rewards/admin/redemptions/${id}/reject`, { rejectionReason: reason[id] || "Not specified" });
+    setActionId(null);
     Swal.fire({ icon: "info", title: "Rejected", timer: 1200, showConfirmButton: false });
     load();
   };
@@ -56,51 +64,64 @@ export default function AdminRedemptions() {
         ))}
       </div>
 
-      <div className="space-y-3">
-        {redemptions.length === 0 && (
-          <p className="text-center text-gray-400 text-sm py-8">No redemptions found</p>
-        )}
-        {redemptions.map((r) => (
-          <div key={r._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                {/* populated as rewardId */}
-                <p className="font-semibold text-gray-800">{r.rewardId?.rewardName || "Reward"}</p>
-                <p className="text-xs text-gray-400">{r.userId?.name} • {r.userId?.mobile}</p>
-                <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</p>
-                <p className="text-xs text-red-400 font-semibold mt-1">-{r.pointsUsed} pts</p>
-                <p className="text-xs text-gray-400">Wallet: {r.userId?.walletPoints} pts</p>
-              </div>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusStyle[r.status]}`}>
-                {r.status}
-              </span>
-            </div>
-
-            {r.rejectionReason && (
-              <p className="text-xs text-red-400 mb-2 flex items-center gap-1"><Info size={14} /> {r.rejectionReason}</p>
-            )}
-
-            {r.status === "pending" && (
-              <div className="space-y-2 mt-2">
-                <input
-                  placeholder="Rejection reason (optional)"
-                  value={reason[r._id] || ""}
-                  onChange={(e) => setReason({ ...reason, [r._id]: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-                />
-                <div className="flex gap-2">
-                  <button onClick={() => approve(r._id)} className="flex-1 bg-green-500 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5">
-                    <CheckCircle size={14} /> Approve
-                  </button>
-                  <button onClick={() => reject(r._id)} className="flex-1 bg-red-500 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5">
-                    <XCircle size={14} /> Reject
-                  </button>
+      {loading ? (
+        <div className="flex justify-center items-center py-16">
+          <Loader2 size={32} className="animate-spin text-slate-400" />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {redemptions.length === 0 && (
+            <p className="text-center text-gray-400 text-sm py-8">No redemptions found</p>
+          )}
+          {redemptions.map((r) => (
+            <div key={r._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="font-semibold text-gray-800">{r.rewardId?.rewardName || "Reward"}</p>
+                  <p className="text-xs text-gray-400">{r.userId?.name} • {r.userId?.mobile}</p>
+                  <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</p>
+                  <p className="text-xs text-red-400 font-semibold mt-1">-{r.pointsUsed} pts</p>
+                  <p className="text-xs text-gray-400">Wallet: {r.userId?.walletPoints} pts</p>
                 </div>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusStyle[r.status]}`}>
+                  {r.status}
+                </span>
               </div>
-            )}
-          </div>
-        ))}
-      </div>
+
+              {r.rejectionReason && (
+                <p className="text-xs text-red-400 mb-2 flex items-center gap-1"><Info size={14} /> {r.rejectionReason}</p>
+              )}
+
+              {r.status === "pending" && (
+                <div className="space-y-2 mt-2">
+                  <input
+                    placeholder="Rejection reason (optional)"
+                    value={reason[r._id] || ""}
+                    onChange={(e) => setReason({ ...reason, [r._id]: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => approve(r._id)}
+                      disabled={actionId === r._id}
+                      className="flex-1 bg-green-500 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60 transition active:scale-95"
+                    >
+                      {actionId === r._id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />} Approve
+                    </button>
+                    <button
+                      onClick={() => reject(r._id)}
+                      disabled={actionId === r._id}
+                      className="flex-1 bg-red-500 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60 transition active:scale-95"
+                    >
+                      {actionId === r._id ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} Reject
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

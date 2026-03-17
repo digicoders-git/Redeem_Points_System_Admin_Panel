@@ -1,33 +1,41 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
-import { Info, CheckCircle, XCircle } from "lucide-react";
+import { Info, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function AdminBills() {
   const [bills, setBills] = useState([]);
   const [filter, setFilter] = useState("all");
   const [reason, setReason] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [actionId, setActionId] = useState(null);
 
-  const load = () =>
+  const load = () => {
+    setLoading(true);
     api
       .get("/bills/admin/all", { params: filter !== "all" ? { status: filter } : {} })
-      .then(({ data }) => setBills(data.bills || []));
+      .then(({ data }) => setBills(data.bills || []))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => { load(); }, [filter]);
 
   const approve = async (id) => {
     const res = await Swal.fire({ title: "Approve Bill?", icon: "question", showCancelButton: true, confirmButtonText: "Yes, Approve", confirmButtonColor: "#22c55e" });
     if (!res.isConfirmed) return;
+    setActionId(id);
     await api.patch(`/bills/admin/${id}/approve`);
+    setActionId(null);
     Swal.fire({ icon: "success", title: "Approved!", timer: 1200, showConfirmButton: false });
     load();
   };
 
-  // API field is "rejectionReason"
   const reject = async (id) => {
     const res = await Swal.fire({ title: "Reject Bill?", icon: "warning", showCancelButton: true, confirmButtonText: "Yes, Reject", confirmButtonColor: "#ef4444" });
     if (!res.isConfirmed) return;
+    setActionId(id);
     await api.patch(`/bills/admin/${id}/reject`, { rejectionReason: reason[id] || "Not specified" });
+    setActionId(null);
     Swal.fire({ icon: "info", title: "Rejected", timer: 1200, showConfirmButton: false });
     load();
   };
@@ -56,58 +64,72 @@ export default function AdminBills() {
         ))}
       </div>
 
-      <div className="space-y-3">
-        {bills.length === 0 && (
-          <p className="text-center text-gray-400 text-sm py-8">No bills found</p>
-        )}
-        {bills.map((b) => (
-          <div key={b._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <p className="font-semibold text-gray-800">₹{b.amount}</p>
-                <p className="text-xs text-gray-500 font-medium">{b.billName}</p>
-                <p className="text-xs text-gray-400">#{b.billNumber}</p>
-                <p className="text-xs text-gray-400">{b.userId?.name || "User"} • {b.userId?.mobile}</p>
-                <p className="text-xs text-gray-400">{new Date(b.date || b.createdAt).toLocaleDateString()}</p>
-              </div>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusStyle[b.status]}`}>
-                {b.status}
-              </span>
-            </div>
-
-            {b.billImage && (
-              <img src={b.billImage} alt="bill" className="w-full h-36 object-cover rounded-xl mb-3" />
-            )}
-
-            {b.rejectionReason && (
-              <p className="text-xs text-red-400 mb-2 flex items-center gap-1"><Info size={14} /> {b.rejectionReason}</p>
-            )}
-
-            {b.status === "pending" && (
-              <div className="space-y-2">
-                <input
-                  placeholder="Rejection reason (optional)"
-                  value={reason[b._id] || ""}
-                  onChange={(e) => setReason({ ...reason, [b._id]: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-                />
-                <div className="flex gap-2">
-                  <button onClick={() => approve(b._id)} className="flex-1 bg-green-500 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5">
-                    <CheckCircle size={14} /> Approve
-                  </button>
-                  <button onClick={() => reject(b._id)} className="flex-1 bg-red-500 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5">
-                    <XCircle size={14} /> Reject
-                  </button>
+      {loading ? (
+        <div className="flex justify-center items-center py-16">
+          <Loader2 size={32} className="animate-spin text-slate-400" />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {bills.length === 0 && (
+            <p className="text-center text-gray-400 text-sm py-8">No bills found</p>
+          )}
+          {bills.map((b) => (
+            <div key={b._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="font-semibold text-gray-800">₹{b.amount}</p>
+                  <p className="text-xs text-gray-500 font-medium">{b.billName}</p>
+                  <p className="text-xs text-gray-400">#{b.billNumber}</p>
+                  <p className="text-xs text-gray-400">{b.userId?.name || "User"} • {b.userId?.mobile}</p>
+                  <p className="text-xs text-gray-400">{new Date(b.date || b.createdAt).toLocaleDateString()}</p>
                 </div>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusStyle[b.status]}`}>
+                  {b.status}
+                </span>
               </div>
-            )}
 
-            {b.pointsEarned > 0 && (
-              <p className="text-xs text-violet-600 font-semibold mt-2">+{b.pointsEarned} points awarded</p>
-            )}
-          </div>
-        ))}
-      </div>
+              {b.billImage && (
+                <img src={b.billImage} alt="bill" className="w-full h-36 object-cover rounded-xl mb-3" />
+              )}
+
+              {b.rejectionReason && (
+                <p className="text-xs text-red-400 mb-2 flex items-center gap-1"><Info size={14} /> {b.rejectionReason}</p>
+              )}
+
+              {b.status === "pending" && (
+                <div className="space-y-2">
+                  <input
+                    placeholder="Rejection reason (optional)"
+                    value={reason[b._id] || ""}
+                    onChange={(e) => setReason({ ...reason, [b._id]: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => approve(b._id)}
+                      disabled={actionId === b._id}
+                      className="flex-1 bg-green-500 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60 transition active:scale-95"
+                    >
+                      {actionId === b._id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />} Approve
+                    </button>
+                    <button
+                      onClick={() => reject(b._id)}
+                      disabled={actionId === b._id}
+                      className="flex-1 bg-red-500 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60 transition active:scale-95"
+                    >
+                      {actionId === b._id ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} Reject
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {b.pointsEarned > 0 && (
+                <p className="text-xs text-violet-600 font-semibold mt-2">+{b.pointsEarned} points awarded</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
