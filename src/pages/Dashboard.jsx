@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
-import { Users, Receipt, Clock, Gift, Settings, ShieldCheck, Loader2 } from "lucide-react";
+import { Users, Receipt, Clock, Gift, Settings, Loader2 } from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ users: 0, bills: 0, pendingBills: 0, pendingRedemptions: 0 });
-  const [admins, setAdmins] = useState([]);
   const [config, setConfig] = useState({ amountPerPoint: "" });
   const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -17,8 +16,7 @@ export default function Dashboard() {
       api.get("/bills/admin/all"),
       api.get("/rewards/admin/redemptions"),
       api.get("/bills/admin/point-config").catch(() => ({ data: {} })),
-      api.get("/admin/list"),
-    ]).then(([u, b, r, c, a]) => {
+    ]).then(([u, b, r, c]) => {
       setStats({
         users: u.data.users?.length || 0,
         bills: b.data.bills?.length || 0,
@@ -26,7 +24,6 @@ export default function Dashboard() {
         pendingRedemptions: r.data.redemptions?.filter((x) => x.status === "pending").length || 0,
       });
       if (c.data.pointSetting) setConfig({ amountPerPoint: c.data.pointSetting.amountPerPoint });
-      setAdmins(a.data.admins || []);
     }).catch(() => {}).finally(() => setPageLoading(false));
   }, []);
 
@@ -94,21 +91,6 @@ export default function Dashboard() {
             </form>
           </div>
 
-          {/* Admin List */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-            <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-1.5"><ShieldCheck size={18} /> Admin Accounts ({admins.length})</h3>
-            <div className="space-y-2">
-              {admins.map((a) => (
-                <div key={a._id} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{a.name || a.adminId}</p>
-                    <p className="text-xs text-gray-400">{a.adminId}</p>
-                  </div>
-                  <p className="text-xs text-gray-400">{new Date(a.createdAt).toLocaleDateString()}</p>
-                </div>
-              ))}
-            </div>
-          </div>
         </>
       )}
     </div>
