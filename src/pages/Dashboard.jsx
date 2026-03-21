@@ -74,7 +74,7 @@ export default function Dashboard() {
 
       <div className="px-5">
         {pageLoading ? (
-          <div className="flex justify-center items-center py-16">
+          <div className="flex justify-center items-center py-40">
             <Loader2 size={32} className="animate-spin text-[#0f4089]" />
           </div>
         ) : (
