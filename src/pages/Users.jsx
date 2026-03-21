@@ -63,7 +63,7 @@ export default function Users() {
     if (newPassword.length < 6) return;
     setPwdLoading(true);
     try {
-      await api.patch(`/admin/${pwdModal._id}/change-password`, { newPassword });
+      await api.patch(`users/admin/${pwdModal._id}/change-password`, { newPassword });
       Swal.fire({ icon: "success", title: "Password Changed!", text: `Password updated for ${pwdModal.name}`, timer: 1500, showConfirmButton: false });
       setPwdModal(null);
       setNewPassword("");
