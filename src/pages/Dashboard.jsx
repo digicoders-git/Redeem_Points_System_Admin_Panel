@@ -100,19 +100,19 @@ export default function Dashboard() {
               </h3>
               <p className="text-[13px] text-gray-500 mb-5 font-medium ml-[34px]">Set how many ₹ = 1 Point</p>
               
-              <form onSubmit={saveConfig} className="flex gap-3">
+              <form onSubmit={saveConfig} className="flex flex-col gap-3">
                 <input
                   type="number"
                   placeholder="e.g. 100"
                   value={config.amountPerPoint}
                   onChange={(e) => setConfig({ amountPerPoint: e.target.value })}
                   required
-                  className="flex-1 border-2 border-gray-100 bg-[#F5F7FA] rounded-2xl px-5 py-3.5 text-[15px] font-bold text-gray-800 focus:outline-none focus:border-[#0f4089]/30 transition-colors"
+                  className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-2xl px-5 py-3.5 text-[15px] font-bold text-gray-800 focus:outline-none focus:border-[#0f4089]/30 transition-colors"
                 />
                 <button 
                   type="submit" 
                   disabled={saving} 
-                  className="bg-[#0f4089] hover:bg-[#1a4187] text-white px-6 rounded-2xl text-[15px] font-bold flex items-center gap-2 disabled:opacity-60 transition active:scale-[0.98] shadow-md"
+                  className="w-full bg-[#0f4089] hover:bg-[#1a4187] text-white py-3.5 rounded-2xl text-[15px] font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition active:scale-[0.98] shadow-md"
                 >
                   {saving && <Loader2 size={16} className="animate-spin" />}
                   Save
