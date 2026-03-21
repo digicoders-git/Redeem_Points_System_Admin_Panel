@@ -44,7 +44,7 @@ export default function AdminLogin() {
         </div>
       </div>
 
-      <div className="w-full max-w-sm px-5 -mt-20 relative z-20">
+      <div className="w-full max-w-sm px-5 -mt-28 relative z-20">
         <div className="bg-white rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-8 border border-gray-100">
           <div className="text-center mb-6 flex flex-col items-center">
             <div className="w-12 h-12 bg-[#0f4089]/5 text-[#0f4089] rounded-2xl flex items-center justify-center mb-3">

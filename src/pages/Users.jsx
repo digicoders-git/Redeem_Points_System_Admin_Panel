@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import api from "../api/axios";
-import { Coins, Loader2, Users as UsersIcon, Search, X } from "lucide-react";
+import { Coins, Loader2, Users as UsersIcon, Search, X, KeyRound } from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function Users() {
@@ -8,7 +8,10 @@ export default function Users() {
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // all | active | inactive
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [pwdModal, setPwdModal] = useState(null); // user object
+  const [newPassword, setNewPassword] = useState("");
+  const [pwdLoading, setPwdLoading] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -53,6 +56,22 @@ export default function Users() {
     setActionId(null);
     Swal.fire({ icon: "success", title: "Deleted!", timer: 1200, showConfirmButton: false });
     load();
+  };
+
+  const changePassword = async (e) => {
+    e.preventDefault();
+    if (newPassword.length < 6) return;
+    setPwdLoading(true);
+    try {
+      await api.patch(`/users/admin/${pwdModal._id}/change-password`, { newPassword });
+      Swal.fire({ icon: "success", title: "Password Changed!", text: `Password updated for ${pwdModal.name}`, timer: 1500, showConfirmButton: false });
+      setPwdModal(null);
+      setNewPassword("");
+    } catch (e) {
+      Swal.fire({ icon: "error", title: "Failed", text: e.response?.data?.message || "Failed to change password" });
+    } finally {
+      setPwdLoading(false);
+    }
   };
 
   const statusTabs = [
@@ -168,6 +187,12 @@ export default function Users() {
                         {actionId === u._id ? <Loader2 size={12} className="animate-spin" /> : null}
                         Delete
                       </button>
+                      <button
+                        onClick={() => { setPwdModal(u); setNewPassword(""); }}
+                        className="text-[11px] bg-blue-50 text-blue-600 border border-blue-200 px-3 py-1.5 rounded-xl font-bold transition active:scale-95 flex justify-center items-center gap-1 min-w-[80px]"
+                      >
+                        <KeyRound size={11} /> Password
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -176,6 +201,48 @@ export default function Users() {
           </div>
         )}
       </div>
+
+      {/* Change Password Modal */}
+      {pwdModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">Change Password</h3>
+                <p className="text-sm text-gray-400 mt-0.5">{pwdModal.name} • {pwdModal.mobile}</p>
+              </div>
+              <button
+                onClick={() => { setPwdModal(null); setNewPassword(""); }}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition"
+              >
+                <X size={16} className="text-gray-500" />
+              </button>
+            </div>
+            <form onSubmit={changePassword} className="space-y-4">
+              <div className="relative">
+                <KeyRound size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="password"
+                  placeholder="New password (min 6 chars)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  minLength={6}
+                  required
+                  className="w-full border border-gray-200 rounded-2xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4089]/20"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={pwdLoading || newPassword.length < 6}
+                className="w-full bg-[#0f4089] text-white font-bold py-3.5 rounded-2xl text-sm transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {pwdLoading ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
+                {pwdLoading ? "Updating..." : "Update Password"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
