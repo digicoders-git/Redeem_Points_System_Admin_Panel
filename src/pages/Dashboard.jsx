@@ -20,7 +20,7 @@ export default function Dashboard() {
       const redemptions = r.data.redemptions || [];
       const totalPointsRedeemed = redemptions
         .filter((x) => x.status === "approved" || x.status === "delivered")
-        .reduce((sum, x) => sum + (x.reward?.pointsRequired || 0), 0);
+        .reduce((sum, x) => sum + (x.pointsUsed || x.reward?.pointsRequired || 0), 0);
 
       setStats({
         users: u.data.users?.length || 0,

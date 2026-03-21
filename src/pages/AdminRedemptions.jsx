@@ -40,10 +40,21 @@ export default function AdminRedemptions() {
     load();
   };
 
+  const deliver = async (id) => {
+    const res = await Swal.fire({ title: "Mark as Delivered?", icon: "question", showCancelButton: true, confirmButtonText: "Yes, Delivered", confirmButtonColor: "#3b82f6" });
+    if (!res.isConfirmed) return;
+    setActionId(id);
+    await api.patch(`/rewards/admin/redemptions/${id}/deliver`);
+    setActionId(null);
+    Swal.fire({ icon: "success", title: "Delivered!", timer: 1200, showConfirmButton: false });
+    load();
+  };
+
   const statusStyle = {
     pending: "bg-amber-100 text-amber-700 border-amber-200",
     approved: "bg-green-100 text-green-700 border-green-200",
     rejected: "bg-red-100 text-red-600 border-red-200",
+    delivered: "bg-blue-100 text-blue-700 border-blue-200",
   };
 
   return (
@@ -66,7 +77,7 @@ export default function AdminRedemptions() {
 
       <div className="px-5">
         <div className="flex gap-2 mb-6 overflow-x-auto pb-1 no-scrollbar shrink-0">
-          {["all", "pending", "approved", "rejected"].map((f) => (
+          {["all", "pending", "approved", "rejected", "delivered"].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -142,6 +153,18 @@ export default function AdminRedemptions() {
                         {actionId === r._id ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} fill="white" className="text-red-500" />} Reject
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {r.status === "approved" && (
+                  <div className="bg-gray-50 rounded-xl p-3 mt-4 border border-gray-100">
+                    <button
+                      onClick={() => deliver(r._id)}
+                      disabled={actionId === r._id}
+                      className="w-full bg-[#3b82f6] text-white py-3 rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-60 transition active:scale-95 shadow-sm shadow-blue-500/20"
+                    >
+                      {actionId === r._id ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} fill="white" className="text-[#3b82f6]" />} Mark as Delivered
+                    </button>
                   </div>
                 )}
               </div>
