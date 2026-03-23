@@ -11,13 +11,18 @@ import { Download } from "lucide-react";
 
 export default function App() {
   const token = localStorage.getItem("adminToken");
-  const [tab, setTab] = useState("dashboard");
-  const [installPrompt, setInstallPrompt] = useState(null);
+  const [tab, setTab] = useState(() => localStorage.getItem("adminTab") || "dashboard");
+
+  const handleTab = (t) => { localStorage.setItem("adminTab", t); setTab(t); };
+  const [installPrompt, setInstallPrompt] = useState(() => window.__installPrompt || null);
 
   useEffect(() => {
     const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", () => setInstallPrompt(null));
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -41,7 +46,7 @@ export default function App() {
     <PullToRefresh>
       <div className="max-w-lg mx-auto min-h-screen bg-[#F5F7FA] font-sans relative pb-safe">
         {pages[tab]}
-        <BottomNav active={tab} setActive={setTab} />
+        <BottomNav active={tab} setActive={handleTab} />
         {installPrompt && (
           <button
             onClick={handleInstall}
