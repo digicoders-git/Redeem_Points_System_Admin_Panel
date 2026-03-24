@@ -7,6 +7,7 @@ import AdminRewards from "./pages/AdminRewards";
 import AdminRedemptions from "./pages/AdminRedemptions";
 import BottomNav from "./components/BottomNav";
 import PullToRefresh from "./components/PullToRefresh";
+import IOSInstallPrompt from "./components/IOSInstallPrompt";
 import { Download } from "lucide-react";
 
 export default function App() {
@@ -44,6 +45,7 @@ export default function App() {
 
   return (
     <PullToRefresh>
+      <IOSInstallPrompt />
       <div className="max-w-lg mx-auto min-h-screen bg-[#F5F7FA] font-sans relative pb-safe">
         {pages[tab]}
         <BottomNav active={tab} setActive={handleTab} />
