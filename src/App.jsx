@@ -5,6 +5,7 @@ import Users from "./pages/Users";
 import AdminBills from "./pages/AdminBills";
 import AdminRewards from "./pages/AdminRewards";
 import AdminRedemptions from "./pages/AdminRedemptions";
+import AdminTerms from "./pages/AdminTerms";
 import BottomNav from "./components/BottomNav";
 import PullToRefresh from "./components/PullToRefresh";
 import IOSInstallPrompt from "./components/IOSInstallPrompt";
@@ -41,6 +42,7 @@ export default function App() {
     bills: <AdminBills />,
     rewards: <AdminRewards />,
     redemptions: <AdminRedemptions />,
+    terms: <AdminTerms />,
   };
 
   return (

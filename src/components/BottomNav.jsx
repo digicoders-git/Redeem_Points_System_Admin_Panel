@@ -1,14 +1,15 @@
 import api from "../api/axios";
-import { LayoutDashboard, Users, Receipt, Gift, CheckCircle, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Receipt, Gift, CheckCircle, LogOut, FileText } from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function BottomNav({ active, setActive }) {
   const tabs = [
-    { id: "dashboard", icon: <LayoutDashboard size={20} />, label: "Dashboard" },
-    { id: "users", icon: <Users size={20} />, label: "Users" },
-    { id: "bills", icon: <Receipt size={20} />, label: "Bills" },
-    { id: "rewards", icon: <Gift size={20} />, label: "Rewards" },
-    { id: "redemptions", icon: <CheckCircle size={20} />, label: "Redeem" },
+    { id: "dashboard", icon: <LayoutDashboard size={18} />, label: "Home" },
+    { id: "users", icon: <Users size={18} />, label: "Users" },
+    { id: "bills", icon: <Receipt size={18} />, label: "Bills" },
+    { id: "rewards", icon: <Gift size={18} />, label: "Rewards" },
+    { id: "redemptions", icon: <CheckCircle size={18} />, label: "Redeem" },
+    { id: "terms", icon: <FileText size={18} />, label: "Terms" },
   ];
 
   const logout = async () => {
@@ -42,7 +43,7 @@ export default function BottomNav({ active, setActive }) {
           onClick={logout}
           className="flex-1 flex flex-col items-center py-2.5 gap-0.5 text-gray-400 hover:text-red-500 transition-colors"
         >
-          <span className="mb-0.5"><LogOut size={20} /></span>
+          <span className="mb-0.5"><LogOut size={18} /></span>
           <span className="text-[9px] font-semibold">Logout</span>
         </button>
       </div>
