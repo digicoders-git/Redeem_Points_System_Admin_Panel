@@ -98,7 +98,7 @@ export default function AdminRewards() {
 
   const toggleActive = async (r) => {
     setActionId(r._id);
-    await api.put(`/rewards/admin/rewards/${r._id}`, { isActive: !r.isActive });
+    await api.patch(`/rewards/admin/rewards/${r._id}/toggle`);
     setActionId(null);
     load();
   };
@@ -212,7 +212,8 @@ export default function AdminRewards() {
                     <div className="shrink-0">
                       {images.length > 0 ? (
                         <div className="relative w-16 h-16">
-                          <img src={images[0]} alt={r.rewardName} className="w-16 h-16 rounded-xl object-cover border border-gray-100" />
+                          <img src={images[0]} alt={r.rewardName} className="w-16 h-16 rounded-xl object-cover border border-gray-100" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                          <div className="w-16 h-16 rounded-xl bg-gray-50 items-center justify-center border border-gray-100 hidden"><ImageIcon size={22} className="text-gray-300" /></div>
                           {images.length > 1 && (
                             <span className="absolute -bottom-1 -right-1 bg-[#0f4089] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">+{images.length - 1}</span>
                           )}
@@ -238,7 +239,7 @@ export default function AdminRewards() {
                   {images.length > 1 && (
                     <div className="flex gap-1.5 mt-3 overflow-x-auto no-scrollbar">
                       {images.map((img, i) => (
-                        <img key={i} src={img} alt="" className="w-12 h-12 rounded-lg object-cover border border-gray-100 shrink-0" />
+                        <img key={i} src={img} alt="" className="w-12 h-12 rounded-lg object-cover border border-gray-100 shrink-0" onError={(e) => { e.target.parentElement.style.display='none'; }} />
                       ))}
                     </div>
                   )}
