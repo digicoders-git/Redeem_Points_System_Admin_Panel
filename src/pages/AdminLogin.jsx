@@ -1,12 +1,13 @@
 import { useState } from "react";
 import api from "../api/axios";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Loader2, Eye, EyeOff } from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function AdminLogin() {
   const [form, setForm] = useState({ adminId: "", password: "" });
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -72,14 +73,19 @@ export default function AdminLogin() {
             </div>
             <div>
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5 block ml-1">Password</label>
-              <input
-                type="password"
-                placeholder="Enter Password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-                className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-2xl px-5 py-3.5 text-[15px] font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30 transition-colors"
-              />
+              <div className="relative">
+                <input
+                  type={showPwd ? "text" : "password"}
+                  placeholder="Enter Password"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  required
+                  className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-2xl px-5 py-3.5 text-[15px] font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30 transition-colors pr-12"
+                />
+                <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             
             <div className="pt-2">

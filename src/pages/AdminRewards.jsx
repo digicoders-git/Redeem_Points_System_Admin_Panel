@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
-import { Target, Loader2, Gift } from "lucide-react";
+import { Target, Loader2, Gift, X, Plus, ImageIcon } from "lucide-react";
 import Swal from "sweetalert2";
+
+const emptyForm = { rewardName: "", rewardImage: "", pointsRequired: "", description: "" };
 
 export default function AdminRewards() {
   const [rewards, setRewards] = useState([]);
-  const [form, setForm] = useState({ rewardName: "", rewardImage: "", pointsRequired: "", description: "" });
+  const [form, setForm] = useState(emptyForm);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -20,17 +24,44 @@ export default function AdminRewards() {
 
   useEffect(() => { load(); }, []);
 
+  const handleImageSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + imageFiles.length > 5) {
+      Swal.fire({ icon: "warning", title: "Max 5 images allowed", timer: 1500, showConfirmButton: false });
+      return;
+    }
+    const newFiles = [...imageFiles, ...files];
+    setImageFiles(newFiles);
+    const previews = newFiles.map((f) => URL.createObjectURL(f));
+    setImagePreviews(previews);
+  };
+
+  const removePreview = (i) => {
+    const newFiles = imageFiles.filter((_, idx) => idx !== i);
+    const newPreviews = imagePreviews.filter((_, idx) => idx !== i);
+    setImageFiles(newFiles);
+    setImagePreviews(newPreviews);
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const payload = { ...form, pointsRequired: Number(form.pointsRequired) };
+      const fd = new FormData();
+      fd.append("rewardName", form.rewardName);
+      fd.append("pointsRequired", Number(form.pointsRequired));
+      fd.append("description", form.description);
+      if (form.rewardImage) fd.append("rewardImage", form.rewardImage);
+      imageFiles.forEach((f) => fd.append("rewardImages", f));
+
       if (editing) {
-        await api.put(`/rewards/admin/rewards/${editing}`, payload);
+        await api.put(`/rewards/admin/rewards/${editing}`, fd);
       } else {
-        await api.post("/rewards/admin/add", payload);
+        await api.post("/rewards/admin/add", fd);
       }
-      setForm({ rewardName: "", rewardImage: "", pointsRequired: "", description: "" });
+      setForm(emptyForm);
+      setImageFiles([]);
+      setImagePreviews([]);
       setEditing(null);
       Swal.fire({ icon: "success", title: editing ? "Reward Updated!" : "Reward Added!", timer: 1500, showConfirmButton: false });
       load();
@@ -44,6 +75,15 @@ export default function AdminRewards() {
   const startEdit = (r) => {
     setEditing(r._id);
     setForm({ rewardName: r.rewardName, rewardImage: r.rewardImage || "", pointsRequired: r.pointsRequired, description: r.description || "" });
+    setImageFiles([]);
+    setImagePreviews(r.rewardImages?.length > 0 ? r.rewardImages : r.rewardImage ? [r.rewardImage] : []);
+  };
+
+  const cancelEdit = () => {
+    setEditing(null);
+    setForm(emptyForm);
+    setImageFiles([]);
+    setImagePreviews([]);
   };
 
   const remove = async (id) => {
@@ -65,68 +105,84 @@ export default function AdminRewards() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] font-sans pb-24">
-      {/* Top Header Background */}
-      <div className="bg-[#0f4089] rounded-b-[40px] px-6 pt-10 pb-12 relative overflow-hidden shadow-lg mb-6">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
-        
+      <div className="bg-[#0f4089] rounded-b-[32px] px-5 pt-10 pb-10 relative overflow-hidden shadow-lg mb-5">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         <div className="relative z-10 flex items-center justify-between">
           <div>
-            <h1 className="text-white font-bold text-2xl tracking-wide mb-1">Rewards</h1>
-            <p className="text-white/80 font-medium text-sm">Manage Gift Catalog</p>
+            <h1 className="text-white font-bold text-xl tracking-wide mb-0.5">Rewards</h1>
+            <p className="text-white/70 text-sm">Manage Gift Catalog</p>
           </div>
-          <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-sm border border-white/20">
-            <Gift className="text-white" size={24} />
+          <div className="bg-white/10 p-3 rounded-2xl border border-white/20">
+            <Gift className="text-white" size={22} />
           </div>
         </div>
       </div>
 
-      <div className="px-5 relative z-20">
-        <div className="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-gray-100 p-5 mb-6">
-          <h3 className="font-bold text-gray-900 mb-4">{editing ? "Edit Reward" : "Add New Reward"}</h3>
-          <form onSubmit={submit} className="space-y-4">
+      <div className="px-4">
+        {/* Add/Edit Form */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+          <h3 className="font-bold text-gray-900 mb-4 text-sm">{editing ? "Edit Reward" : "Add New Reward"}</h3>
+          <form onSubmit={submit} className="space-y-3">
             <input
-              placeholder="Reward Name"
+              placeholder="Reward Name *"
               value={form.rewardName}
               onChange={(e) => setForm({ ...form, rewardName: e.target.value })}
               required
-              className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-xl px-4 py-3 text-[14px] font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30 transition-colors"
-            />
-            <input
-              placeholder="Image URL (optional)"
-              value={form.rewardImage}
-              onChange={(e) => setForm({ ...form, rewardImage: e.target.value })}
-              className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-xl px-4 py-3 text-[14px] font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30 transition-colors"
+              className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30"
             />
             <input
               type="number"
-              placeholder="Points Required"
+              placeholder="Points Required *"
               value={form.pointsRequired}
               onChange={(e) => setForm({ ...form, pointsRequired: e.target.value })}
               required
-              className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-xl px-4 py-3 text-[14px] font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30 transition-colors"
+              className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30"
             />
             <input
               placeholder="Description (optional)"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-xl px-4 py-3 text-[14px] font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30 transition-colors"
+              className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30"
             />
-            <div className="flex gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 bg-[#0f4089] hover:bg-[#1a4187] text-white py-3.5 rounded-xl text-[14px] font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition active:scale-95 shadow-md"
-              >
-                {submitting && <Loader2 size={16} className="animate-spin" />}
+
+            {/* Image Upload */}
+            <div>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Images (max 5)</p>
+              <div className="flex flex-wrap gap-2">
+                {imagePreviews.map((src, i) => (
+                  <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-gray-100">
+                    <img src={src} alt="" className="w-full h-full object-cover" />
+                    {imageFiles[i] && (
+                      <button type="button" onClick={() => removePreview(i)} className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                        <X size={10} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {imagePreviews.length < 5 && (
+                  <label className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-[#0f4089]/40 bg-[#F5F7FA] transition-colors">
+                    <Plus size={18} className="text-gray-400" />
+                    <span className="text-[9px] text-gray-400 mt-0.5">Add</span>
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
+                  </label>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5">Or paste image URL:</p>
+              <input
+                placeholder="https://example.com/image.jpg"
+                value={form.rewardImage}
+                onChange={(e) => setForm({ ...form, rewardImage: e.target.value })}
+                className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-xs text-gray-700 focus:outline-none focus:border-[#0f4089]/30 mt-1.5"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button type="submit" disabled={submitting} className="flex-1 bg-[#0f4089] text-white py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 active:scale-95 shadow-md">
+                {submitting && <Loader2 size={15} className="animate-spin" />}
                 {editing ? "Update Reward" : "Add Reward"}
               </button>
               {editing && (
-                <button
-                  type="button"
-                  onClick={() => { setEditing(null); setForm({ rewardName: "", rewardImage: "", pointsRequired: "", description: "" }); }}
-                  className="flex-1 border-2 border-gray-200 text-gray-600 py-3.5 rounded-xl text-[14px] font-bold transition active:scale-95 bg-white hover:bg-gray-50"
-                >
+                <button type="button" onClick={cancelEdit} className="flex-1 border-2 border-gray-200 text-gray-600 py-3 rounded-xl text-sm font-bold active:scale-95 bg-white">
                   Cancel
                 </button>
               )}
@@ -134,75 +190,84 @@ export default function AdminRewards() {
           </form>
         </div>
 
+        {/* Rewards List */}
         {loading ? (
           <div className="flex justify-center items-center py-16">
             <Loader2 size={32} className="animate-spin text-[#0f4089]" />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {rewards.length === 0 && (
-              <div className="bg-white rounded-[24px] p-10 text-center border border-gray-100 shadow-sm">
-                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Gift size={28} className="text-gray-300" />
-                </div>
-                <p className="text-gray-500 font-medium">No rewards added yet</p>
+              <div className="bg-white rounded-2xl p-10 text-center border border-gray-100 shadow-sm">
+                <Gift size={28} className="text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium text-sm">No rewards added yet</p>
               </div>
             )}
-            
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-1">
-              {rewards.map((r) => (
-                <div key={r._id} className="bg-white rounded-[24px] shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-gray-100 p-4 flex flex-col sm:flex-row gap-4 sm:items-center">
-                  {r.rewardImage ? (
-                    <div className="w-full sm:w-20 aspect-square sm:aspect-auto sm:h-20 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center">
-                      <img src={r.rewardImage} alt={r.rewardName} className="w-full h-full object-contain p-2 mix-blend-multiply" />
+            {rewards.map((r) => {
+              const images = r.rewardImages?.length > 0 ? r.rewardImages : r.rewardImage ? [r.rewardImage] : [];
+              return (
+                <div key={r._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                  <div className="flex gap-3">
+                    {/* Images */}
+                    <div className="shrink-0">
+                      {images.length > 0 ? (
+                        <div className="relative w-16 h-16">
+                          <img src={images[0]} alt={r.rewardName} className="w-16 h-16 rounded-xl object-cover border border-gray-100" />
+                          {images.length > 1 && (
+                            <span className="absolute -bottom-1 -right-1 bg-[#0f4089] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">+{images.length - 1}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100">
+                          <ImageIcon size={22} className="text-gray-300" />
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="w-full sm:w-20 aspect-square bg-gray-50 rounded-xl flex items-center justify-center text-gray-300">
-                      <Gift size={32} />
-                    </div>
-                  )}
-                  
-                  <div className="flex-1 min-w-0 flex flex-col">
-                    <p className="font-extrabold text-gray-900 text-[15px] truncate mb-0.5">{r.rewardName}</p>
-                    {r.description && <p className="text-[12px] text-gray-500 truncate mb-1.5">{r.description}</p>}
-                    <div className="inline-flex max-w-fit items-center gap-1.5 bg-[#E3EBFB] text-[#0f4089] px-2.5 py-1 rounded-lg text-[12px] font-bold mb-3">
-                       {r.pointsRequired} pts
-                    </div>
-                    
-                    <div className="flex items-center justify-between mt-auto">
-                      <span className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-full border ${r.isActive ? "bg-green-50 text-green-600 border-green-200" : "bg-gray-50 text-gray-400 border-gray-200"}`}>
-                        {r.isActive ? "Active" : "Inactive"}
-                      </span>
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => toggleActive(r)}
-                          disabled={actionId === r._id}
-                          className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-100 transition"
-                        >
-                          {actionId === r._id ? <Loader2 size={14} className="animate-spin" /> : <Target size={14} />}
-                        </button>
-                        <button
-                          onClick={() => startEdit(r)}
-                          className="w-8 h-8 rounded-lg bg-blue-50 text-[#0f4089] flex items-center justify-center hover:bg-blue-100 transition"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                        </button>
-                        <button
-                          onClick={() => remove(r._id)}
-                          disabled={actionId === r._id}
-                          className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition"
-                        >
-                          {actionId === r._id ? <Loader2 size={14} className="animate-spin" /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>}
-                        </button>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-extrabold text-gray-900 text-sm truncate">{r.rewardName}</p>
+                      {r.description && <p className="text-xs text-gray-500 truncate mt-0.5">{r.description}</p>}
+                      <div className="inline-flex items-center gap-1 bg-[#E3EBFB] text-[#0f4089] px-2.5 py-1 rounded-lg text-xs font-bold mt-1.5">
+                        {r.pointsRequired} pts
                       </div>
                     </div>
                   </div>
+
+                  {/* Multiple image strip */}
+                  {images.length > 1 && (
+                    <div className="flex gap-1.5 mt-3 overflow-x-auto no-scrollbar">
+                      {images.map((img, i) => (
+                        <img key={i} src={img} alt="" className="w-12 h-12 rounded-lg object-cover border border-gray-100 shrink-0" />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                    <span className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-full border ${r.isActive ? "bg-green-50 text-green-600 border-green-200" : "bg-gray-50 text-gray-400 border-gray-200"}`}>
+                      {r.isActive ? "Active" : "Inactive"}
+                    </span>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => toggleActive(r)} disabled={actionId === r._id} className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-100 transition">
+                        {actionId === r._id ? <Loader2 size={13} className="animate-spin" /> : <Target size={13} />}
+                      </button>
+                      <button onClick={() => startEdit(r)} className="w-8 h-8 rounded-lg bg-blue-50 text-[#0f4089] flex items-center justify-center hover:bg-blue-100 transition">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+                      </button>
+                      <button onClick={() => remove(r._id)} disabled={actionId === r._id} className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition">
+                        {actionId === r._id ? <Loader2 size={13} className="animate-spin" /> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `.no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}` }} />
     </div>
   );
 }
