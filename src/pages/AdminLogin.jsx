@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { ShieldCheck, Loader2, Eye, EyeOff } from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function AdminLogin() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({ adminId: "", password: "" });
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,7 +20,7 @@ export default function AdminLogin() {
       localStorage.setItem("adminToken", data.token);
       localStorage.setItem("adminInfo", JSON.stringify(data.admin));
       await Swal.fire({ icon: "success", title: "Login Successful", text: "Welcome back!", timer: 1500, showConfirmButton: false });
-      window.location.reload();
+      navigate("/dashboard", { replace: true });
     } catch (e) {
       const msg = e.response?.data?.message || "Login failed";
       setErr(msg);

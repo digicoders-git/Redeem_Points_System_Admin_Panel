@@ -1,54 +1,22 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
-import { Info, CheckCircle, XCircle, Loader2, CheckSquare } from "lucide-react";
-import Swal from "sweetalert2";
+import { Loader2, CheckSquare } from "lucide-react";
 
 export default function AdminRedemptions() {
+  const navigate = useNavigate();
   const [redemptions, setRedemptions] = useState([]);
   const [filter, setFilter] = useState("all");
-  const [reason, setReason] = useState({});
   const [loading, setLoading] = useState(false);
-  const [actionId, setActionId] = useState(null);
 
   const load = () => {
     setLoading(true);
-    api
-      .get("/rewards/admin/redemptions", { params: filter !== "all" ? { status: filter } : {} })
+    api.get("/rewards/admin/redemptions", { params: filter !== "all" ? { status: filter } : {} })
       .then(({ data }) => setRedemptions(data.redemptions || []))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, [filter]);
-
-  const approve = async (id) => {
-    const res = await Swal.fire({ title: "Approve Redemption?", icon: "question", showCancelButton: true, confirmButtonText: "Yes, Approve", confirmButtonColor: "#22c55e" });
-    if (!res.isConfirmed) return;
-    setActionId(id);
-    await api.patch(`/rewards/admin/redemptions/${id}/approve`);
-    setActionId(null);
-    Swal.fire({ icon: "success", title: "Approved!", timer: 1200, showConfirmButton: false });
-    load();
-  };
-
-  const reject = async (id) => {
-    const res = await Swal.fire({ title: "Reject Redemption?", icon: "warning", showCancelButton: true, confirmButtonText: "Yes, Reject", confirmButtonColor: "#ef4444" });
-    if (!res.isConfirmed) return;
-    setActionId(id);
-    await api.patch(`/rewards/admin/redemptions/${id}/reject`, { rejectionReason: reason[id] || "Not specified" });
-    setActionId(null);
-    Swal.fire({ icon: "info", title: "Rejected", timer: 1200, showConfirmButton: false });
-    load();
-  };
-
-  const deliver = async (id) => {
-    const res = await Swal.fire({ title: "Mark as Delivered?", icon: "question", showCancelButton: true, confirmButtonText: "Yes, Delivered", confirmButtonColor: "#3b82f6" });
-    if (!res.isConfirmed) return;
-    setActionId(id);
-    await api.patch(`/rewards/admin/redemptions/${id}/deliver`);
-    setActionId(null);
-    Swal.fire({ icon: "success", title: "Delivered!", timer: 1200, showConfirmButton: false });
-    load();
-  };
 
   const statusStyle = {
     pending: "bg-amber-100 text-amber-700 border-amber-200",
@@ -59,125 +27,70 @@ export default function AdminRedemptions() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] font-sans pb-24">
-      {/* Top Header Background */}
-      <div className="bg-[#0f4089] rounded-b-[40px] px-6 pt-10 pb-12 mb-6 relative overflow-hidden shadow-lg">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
-        
+      <div className="bg-[#0f4089] rounded-b-[32px] px-5 pt-10 pb-10 mb-5 relative overflow-hidden shadow-lg">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         <div className="relative z-10 flex items-center justify-between">
           <div>
-            <h1 className="text-white font-bold text-2xl tracking-wide mb-1">Redemptions</h1>
-            <p className="text-white/80 font-medium text-sm">Review User Gift Requests</p>
+            <h1 className="text-white font-bold text-xl tracking-wide mb-0.5">Redemptions</h1>
+            <p className="text-white/70 text-sm">Review Gift Requests</p>
           </div>
-          <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-sm border border-white/20">
-            <CheckSquare className="text-white" size={24} />
+          <div className="bg-white/10 p-3 rounded-2xl border border-white/20">
+            <CheckSquare className="text-white" size={22} />
           </div>
         </div>
       </div>
 
-      <div className="px-5">
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 no-scrollbar shrink-0">
+      <div className="px-4">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
           {["all", "pending", "approved", "rejected", "delivered"].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-5 py-2 rounded-full text-[13px] font-bold capitalize whitespace-nowrap transition-colors ${
-                filter === f ? "bg-[#0f4089] text-white shadow-md" : "bg-white text-gray-500 border border-gray-200"
-              }`}
-            >
-              {f}
-            </button>
+            <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 rounded-full text-xs font-bold capitalize whitespace-nowrap shrink-0 transition-colors ${filter === f ? "bg-[#0f4089] text-white shadow-md" : "bg-white text-gray-500 border border-gray-200"}`}>{f}</button>
           ))}
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-16">
-            <Loader2 size={32} className="animate-spin text-[#0f4089]" />
-          </div>
+          <div className="flex justify-center items-center py-16"><Loader2 size={32} className="animate-spin text-[#0f4089]" /></div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {redemptions.length === 0 && (
-              <div className="bg-white rounded-[24px] p-10 text-center border border-gray-100 shadow-sm">
-                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <CheckSquare size={28} className="text-gray-300" />
-                </div>
-                <p className="text-gray-500 font-medium">No redemptions found</p>
+              <div className="bg-white rounded-2xl p-10 text-center border border-gray-100 shadow-sm">
+                <CheckSquare size={28} className="text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium text-sm">No redemptions found</p>
               </div>
             )}
-            
-            {redemptions.map((r) => (
-              <div key={r._id} className="bg-white rounded-[24px] shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-gray-100 p-5">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex flex-col">
-                    <p className="font-extrabold text-gray-900 text-[16px]">{r.rewardId?.rewardName || "Reward"}</p>
-                    <p className="text-[13px] text-gray-500 font-medium mt-1">{r.userId?.name} • {r.userId?.mobile}</p>
-                    <p className="text-[12px] text-gray-400 mt-1">{new Date(r.createdAt).toLocaleDateString()}</p>
-                    
-                    <div className="flex gap-2 items-center mt-3">
-                      <span className="text-[12px] bg-[#E3EBFB] text-[#0f4089] font-bold px-2 py-1 rounded-lg">Wallet: {r.userId?.walletPoints} pts</span>
-                      <span className="text-[12px] bg-[#f97316]/10 text-[#f97316] font-bold px-2 py-1 rounded-lg">-{r.pointsUsed} pts</span>
+            {redemptions.map((r) => {
+              const images = r.rewardId?.rewardImages?.length > 0 ? r.rewardId.rewardImages : r.rewardId?.rewardImage ? [r.rewardId.rewardImage] : [];
+              return (
+                <div key={r._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 cursor-pointer active:scale-[0.99] transition-transform" onClick={() => navigate(`/redemptions/${r._id}`, { state: { redemption: r } })}>
+                  <div className="flex gap-3 items-start">
+                    {/* Reward thumbnail */}
+                    <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
+                      {images.length > 0 ? (
+                        <img src={images[0]} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = "none"; }} />
+                      ) : (
+                        <CheckSquare size={20} className="text-gray-300" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-bold text-gray-900 text-sm truncate">{r.rewardId?.rewardName || "Reward"}</p>
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full capitalize border shrink-0 ${statusStyle[r.status]}`}>{r.status}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">{r.userId?.name} • {r.userId?.mobile}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{new Date(r.createdAt).toLocaleDateString()}</p>
+                      <div className="flex gap-2 mt-2">
+                        <span className="text-xs bg-[#E3EBFB] text-[#0f4089] font-bold px-2 py-0.5 rounded-lg">Wallet: {r.userId?.walletPoints} pts</span>
+                        <span className="text-xs bg-orange-50 text-orange-500 font-bold px-2 py-0.5 rounded-lg">-{r.pointsUsed} pts</span>
+                      </div>
                     </div>
                   </div>
-                  <span className={`text-[11px] font-bold px-3 py-1.5 rounded-full capitalize border ${statusStyle[r.status]}`}>
-                    {r.status}
-                  </span>
                 </div>
-
-                {r.rejectionReason && (
-                  <p className="text-[12px] text-red-500 bg-red-50 p-2.5 rounded-xl border border-red-100 mb-2 flex items-center gap-1.5 font-semibold">
-                    <Info size={14} /> {r.rejectionReason}
-                  </p>
-                )}
-
-                {r.status === "pending" && (
-                  <div className="bg-gray-50 rounded-xl p-3 mt-4 border border-gray-100">
-                    <input
-                      placeholder="Reason for rejection (if rejecting)"
-                      value={reason[r._id] || ""}
-                      onChange={(e) => setReason({ ...reason, [r._id]: e.target.value })}
-                      className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 text-[13px] mb-3 focus:outline-none focus:border-[#0f4089]/30 transition-colors"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => approve(r._id)}
-                        disabled={actionId === r._id}
-                        className="flex-1 bg-[#10b981] text-white py-3 rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-60 transition active:scale-95 shadow-sm shadow-green-500/20"
-                      >
-                        {actionId === r._id ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} fill="white" className="text-[#10b981]" />} Approve
-                      </button>
-                      <button
-                        onClick={() => reject(r._id)}
-                        disabled={actionId === r._id}
-                        className="flex-1 bg-red-500 text-white py-3 rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-60 transition active:scale-95 shadow-sm shadow-red-500/20"
-                      >
-                        {actionId === r._id ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} fill="white" className="text-red-500" />} Reject
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {r.status === "approved" && (
-                  <div className="bg-gray-50 rounded-xl p-3 mt-4 border border-gray-100">
-                    <button
-                      onClick={() => deliver(r._id)}
-                      disabled={actionId === r._id}
-                      className="w-full bg-[#3b82f6] text-white py-3 rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-60 transition active:scale-95 shadow-sm shadow-blue-500/20"
-                    >
-                      {actionId === r._id ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} fill="white" className="text-[#3b82f6]" />} Mark as Delivered
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}} />
+      <style dangerouslySetInnerHTML={{ __html: `.no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}` }} />
     </div>
   );
 }

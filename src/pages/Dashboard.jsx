@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
-import { Users, Receipt, Clock, Gift, Settings, Loader2, LayoutDashboard } from "lucide-react";
+import { Users, Receipt, Clock, Gift, Settings, Loader2, LayoutDashboard, KeyRound, Eye, EyeOff } from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function Dashboard() {
@@ -8,6 +8,10 @@ export default function Dashboard() {
   const [config, setConfig] = useState({ amountPerPoint: "" });
   const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pwdForm, setPwdForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
   const admin = JSON.parse(localStorage.getItem("adminInfo") || "{}");
 
   useEffect(() => {
@@ -43,6 +47,29 @@ export default function Dashboard() {
       Swal.fire({ icon: "error", title: "Failed", text: "Could not save config" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const changePassword = async (e) => {
+    e.preventDefault();
+    if (pwdForm.newPassword !== pwdForm.confirmPassword)
+      return Swal.fire({ icon: "error", title: "Mismatch", text: "New passwords do not match" });
+    if (pwdForm.newPassword.length < 6)
+      return Swal.fire({ icon: "error", title: "Too short", text: "Password must be at least 6 characters" });
+    setPwdSaving(true);
+    try {
+      const { data } = await api.patch("/admin/change-password", {
+        currentPassword: pwdForm.currentPassword,
+        newPassword: pwdForm.newPassword,
+      });
+      // Update token so session stays valid
+      localStorage.setItem("adminToken", data.token);
+      setPwdForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      Swal.fire({ icon: "success", title: "Password Changed!", timer: 1500, showConfirmButton: false });
+    } catch (err) {
+      Swal.fire({ icon: "error", title: "Failed", text: err.response?.data?.message || "Could not change password" });
+    } finally {
+      setPwdSaving(false);
     }
   };
 
@@ -116,6 +143,60 @@ export default function Dashboard() {
                 >
                   {saving && <Loader2 size={16} className="animate-spin" />}
                   Save
+                </button>
+              </form>
+            </div>
+
+            {/* Admin Change Password */}
+            <div className="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-gray-100 p-6 mb-4">
+              <h3 className="font-bold text-gray-900 mb-1 flex items-center gap-2">
+                <div className="bg-[#E3EBFB] text-[#0f4089] p-1.5 rounded-lg"><KeyRound size={18} /></div>
+                Change Admin Password
+              </h3>
+              <p className="text-[13px] text-gray-500 mb-5 font-medium ml-[34px]">Update your login password</p>
+              <form onSubmit={changePassword} className="flex flex-col gap-3">
+                <div className="relative">
+                  <input
+                    type={showCurrent ? "text" : "password"}
+                    placeholder="Current Password"
+                    value={pwdForm.currentPassword}
+                    onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })}
+                    required
+                    className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-2xl px-5 py-3.5 text-[15px] font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30 transition-colors pr-12"
+                  />
+                  <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showNew ? "text" : "password"}
+                    placeholder="New Password (min 6 chars)"
+                    value={pwdForm.newPassword}
+                    onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
+                    required
+                    minLength={6}
+                    className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-2xl px-5 py-3.5 text-[15px] font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30 transition-colors pr-12"
+                  />
+                  <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <input
+                  type="password"
+                  placeholder="Confirm New Password"
+                  value={pwdForm.confirmPassword}
+                  onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })}
+                  required
+                  className="w-full border-2 border-gray-100 bg-[#F5F7FA] rounded-2xl px-5 py-3.5 text-[15px] font-semibold text-gray-800 focus:outline-none focus:border-[#0f4089]/30 transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={pwdSaving}
+                  className="w-full bg-[#0f4089] hover:bg-[#1a4187] text-white py-3.5 rounded-2xl text-[15px] font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition active:scale-[0.98] shadow-md"
+                >
+                  {pwdSaving && <Loader2 size={16} className="animate-spin" />}
+                  Update Password
                 </button>
               </form>
             </div>
