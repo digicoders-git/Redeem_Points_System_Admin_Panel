@@ -7,6 +7,8 @@ import AdminBills from "./pages/AdminBills";
 import AdminRewards from "./pages/AdminRewards";
 import AdminRedemptions from "./pages/AdminRedemptions";
 import AdminTerms from "./pages/AdminTerms";
+import AdminPrivacy from "./pages/AdminPrivacy";
+import AdminPrivacyPage from "./pages/AdminPrivacyPage";
 import BillDetail from "./pages/BillDetail";
 import RedemptionDetail from "./pages/RedemptionDetail";
 import BottomNav from "./components/BottomNav";
@@ -52,6 +54,7 @@ export default function App() {
           <Route path="/rewards" element={<ProtectedRoute><AdminRewards /></ProtectedRoute>} />
           <Route path="/redemptions" element={<ProtectedRoute><AdminRedemptions /></ProtectedRoute>} />
           <Route path="/terms" element={<ProtectedRoute><AdminTerms /></ProtectedRoute>} />
+          <Route path="/privacy-policy" element={<AdminPrivacyPage />} />
           <Route path="/bills/:id" element={<ProtectedRoute><BillDetail /></ProtectedRoute>} />
           <Route path="/redemptions/:id" element={<ProtectedRoute><RedemptionDetail /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
